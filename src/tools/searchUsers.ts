@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { supabase } from "../supabase.js";
+import { canExecute, Current_Role } from "../permissions.js";
 
 export function registerSearchUsersTool(server: McpServer) {
     server.tool(
@@ -11,6 +12,16 @@ export function registerSearchUsersTool(server: McpServer) {
             limit: z.number().optional().describe("Maximum number of results (default 10)"),
         },
         async ({ query, role, limit = 10 }) => {
+            if (!canExecute("search_users", Current_Role)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: "Permission denied: current role is not allowed to search users."
+                        }
+                    ]
+                };
+            }
             let queryBuilder = supabase.from("users").select("*");
 
             if (query) {

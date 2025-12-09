@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { supabase } from "../supabase.js";
+import { canExecute, Current_Role } from "../permissions.js";
 
 export function registerCountUsersTool(server: McpServer) {
     server.tool(
@@ -9,6 +10,16 @@ export function registerCountUsersTool(server: McpServer) {
             role: z.string().optional().describe("Filter count by role (optional)"),
         },
         async ({ role }) => {
+            if (!canExecute("count_users", Current_Role)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: "Permission denied: current role is not allowed to count users."
+                        }
+                    ]
+                };
+            }
             let queryBuilder = supabase.from("users").select("*", { count: "exact", head: true });
 
             if (role) {

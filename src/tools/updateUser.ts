@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { supabase } from "../supabase.js";
+import { canExecute, Current_Role } from "../permissions.js";
 
 export function registerUpdateUserTool(server: McpServer) {
     server.tool(
@@ -12,6 +13,16 @@ export function registerUpdateUserTool(server: McpServer) {
             name: z.string().optional().describe("New name (optional)"),
         },
         async ({ id, email, role, name }) => {
+            if (!canExecute("update_user", Current_Role)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: "Permission denied: current role is not allowed to update users."
+                        }
+                    ]
+                };
+            }
             const updates: Record<string, string> = {};
             if (email) updates.email = email;
             if (role) updates.role = role;
